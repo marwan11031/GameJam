@@ -4,7 +4,7 @@ LIBS = -lraylib -lGL -lm -lpthread -lrt -lX11
 TARGET = game
 
 SRC = $(wildcard *.c)
-OBJS = $(SRC: .c=.o)
+OBJS = $(SRC:.c=.o)
 
 
 $(TARGET): $(OBJS)
