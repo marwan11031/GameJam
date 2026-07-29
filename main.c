@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include <stdio.h>
 
 #define WIDTH 800
 #define HEIGHT 400
@@ -41,7 +42,7 @@ int main() {
 
     Player p = {
         .shape = (Rectangle) { 400, HEIGHT - 30, 80, 30},
-        .speed = 500,
+        .speed = 600,
         .score = 0,
     };
 
@@ -56,12 +57,19 @@ int main() {
     };
 
     Droplet droplets[30] = {0};
+
+    float timer = 0;
     float spawnTimer = 0;
     float spawnInterval = 1.5;
 
     while(!WindowShouldClose()) {
         float dt = GetFrameTime();
 
+        timer += dt;
+        if (timer >= 15 && spawnInterval > 0.5) {
+            spawnInterval -= 0.1;
+            timer = 0;
+        }
 
         spawnTimer += dt;
         if(spawnTimer >= spawnInterval) {
@@ -72,6 +80,7 @@ int main() {
         if(IsKeyDown(KEY_A)) {
             p.shape.x -= p.speed * dt;
         }
+
         if(IsKeyDown(KEY_D)) {
             p.shape.x += p.speed * dt;
         }
@@ -79,6 +88,7 @@ int main() {
         if(p.shape.x < 0) {
             p.shape.x = 0;
         }
+
         if(p.shape.x > WIDTH - p.shape.width) {
             p.shape.x = WIDTH - p.shape.width;
         }
@@ -109,6 +119,12 @@ int main() {
                 DrawCircleV(droplets[i].pos, 10, BLUE);
             }
         }
+
+        char buffer[12];
+        snprintf(buffer, sizeof(buffer),"%d", score);
+        // printf("spawnTimer: %f\n\n", spawnTimer);
+        // printf("Timer: %f\n\n", timer);
+        DrawText(buffer, 10, 10, 20, BROWN);
 
         EndDrawing();
     }
