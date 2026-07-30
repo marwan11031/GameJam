@@ -3,15 +3,21 @@
 
 #define WIDTH 800
 #define HEIGHT 400
+#define DROPLETS_MAX 30
+
+typedef enum {
+    Normal,
+    Golden,
+    Toxic,
+} DropletType;
 
 typedef struct {
     float radius;
     float speed;
     Vector2 pos;
     bool active;
+    DropletType type;
 } Droplet;
-
-
 
 typedef struct {
     Rectangle shape;
@@ -22,8 +28,19 @@ typedef struct {
 
 void spawnDroplet(Droplet droplets[], int maxDroplets) {
     int padding = 20;
+    int typeSeed = GetRandomValue(0, 100);
+
     for (int i = 0; i < maxDroplets; i++) {
         if(!droplets[i].active) {
+
+            if (typeSeed < 5) {
+                droplets[i].type = Golden;
+            } else if (typeSeed >= 5 && typeSeed <= 20) {
+                droplets[i].type = Toxic;
+            } else {
+                droplets[i].type = Normal;
+            }
+
             droplets[i].pos.x = GetRandomValue(0 + padding, WIDTH - padding);
             droplets[i].radius = 10;
             droplets[i].speed = GetRandomValue(170, 250);
@@ -34,11 +51,10 @@ void spawnDroplet(Droplet droplets[], int maxDroplets) {
     }
 }
 
-int main() {
+int main(void) {
 
     InitWindow(WIDTH, HEIGHT, "Raylib");
     SetTargetFPS(60);
-    int score = 0;
 
     Player p = {
         .shape = (Rectangle) { 400, HEIGHT - 30, 80, 30},
@@ -46,17 +62,7 @@ int main() {
         .score = 0,
     };
 
-    Camera2D camera = {0};
-    camera.offset = (Vector2) {
-        (float)WIDTH/2, (float)HEIGHT/2
-    };
-    camera.rotation = 0;
-    camera.zoom = 1;
-    camera.target = (Vector2) {
-        p.shape.x, p.shape.y
-    };
-
-    Droplet droplets[30] = {0};
+    Droplet droplets[DROPLETS_MAX] = {0};
 
     float timer = 0;
     float spawnTimer = 0;
@@ -94,12 +100,12 @@ int main() {
         }
 
 
-        for(int i = 0; i < 30; i++) {
+        for(int i = 0; i < DROPLETS_MAX; i++) {
             if(droplets[i].active) {
                 droplets[i].pos.y += droplets[i].speed * dt;
                 if (CheckCollisionCircleRec(droplets[i].pos, droplets[i].radius, p.shape)) {
                     droplets[i].active = false;
-                    score++;
+                    p.score++;
                 }
 
                 if (droplets[i].pos.y > HEIGHT) {
@@ -114,17 +120,21 @@ int main() {
         DrawRectangle(p.shape.x, p.shape.y, p.shape.width, p.shape.height, DARKGREEN);
 
 
-        for(int i = 0; i < 30; i++) {
+        for(int i = 0; i < DROPLETS_MAX; i++) {
             if (droplets[i].active) {
-                DrawCircleV(droplets[i].pos, 10, BLUE);
+                if (droplets[i].type == Normal) {
+                    DrawCircleV(droplets[i].pos, 10, BLUE);
+                } else if (droplets[i].type == Toxic) {
+                    DrawCircleV(droplets[i].pos, 10, GREEN);
+                } else {
+                    DrawCircleV(droplets[i].pos, 10, GOLD);
+                }
+
             }
         }
-
         char buffer[12];
-        snprintf(buffer, sizeof(buffer),"%d", score);
-        // printf("spawnTimer: %f\n\n", spawnTimer);
-        // printf("Timer: %f\n\n", timer);
-        DrawText(buffer, 10, 10, 20, BROWN);
+        snprintf(buffer, sizeof(buffer),"%d", p.score);
+        DrawText(buffer, 10, 10, 20, GRAY);
 
         EndDrawing();
     }
