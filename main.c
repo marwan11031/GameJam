@@ -7,7 +7,6 @@
 
 typedef enum {
   Normal,
-  Golden,
   Toxic,
 } DropletType;
 
@@ -18,11 +17,12 @@ typedef enum {
 } GameState;
 
 typedef struct {
-  float radius;
   float speed;
-  Vector2 pos;
+  Rectangle pos;
   bool active;
   DropletType type;
+  Texture2D tex;
+  Rectangle source;
 } Droplet;
 
 typedef struct {
@@ -41,19 +41,24 @@ void spawnDroplet(Droplet droplets[], int maxDroplets) {
   for (int i = 0; i < maxDroplets; i++) {
     if (!droplets[i].active) {
 
-      if (typeSeed < 5) {
-        droplets[i].type = Golden;
-      } else if (typeSeed >= 5 && typeSeed <= 20) {
+      if (typeSeed >= 0 && typeSeed <= 15) {
         droplets[i].type = Toxic;
       } else {
         droplets[i].type = Normal;
       }
 
+      droplets[i].pos.width = 15;
+      droplets[i].pos.height = 15;
+
       droplets[i].pos.x = GetRandomValue(0 + padding, WIDTH - padding);
-      droplets[i].radius = 10;
       droplets[i].speed = GetRandomValue(170, 250);
       droplets[i].pos.y = 0;
       droplets[i].active = true;
+      droplets[i].tex = LoadTexture("assets/Droplit.png");
+      droplets[i].source = (Rectangle){.x = 0,
+                                       .y = 0,
+                                       .width = droplets[i].tex.width,
+                                       droplets[i].tex.height};
       break;
     }
   }
@@ -75,7 +80,7 @@ int main(void) {
 
   Droplet droplets[DROPLETS_MAX] = {0};
 
-  Texture2D background = LoadTexture("assets/monokuma-danganronpa.jpg");
+  Texture2D background = LoadTexture("assets/background.jpg");
   Rectangle source = (Rectangle){
       .x = 0,
       .y = 0,
@@ -128,8 +133,7 @@ int main(void) {
     for (int i = 0; i < DROPLETS_MAX; i++) {
       if (droplets[i].active) {
         droplets[i].pos.y += droplets[i].speed * dt;
-        if (CheckCollisionCircleRec(droplets[i].pos, droplets[i].radius,
-                                    p.shape)) {
+        if (CheckCollisionRecs(droplets[i].pos, p.shape)) {
           droplets[i].active = false;
 
           switch (droplets[i].type) {
@@ -141,12 +145,6 @@ int main(void) {
             }
 
           } break;
-
-          case Golden: {
-            p.score += 5;
-
-          } break;
-
           case Normal: {
             p.score++;
           } break;
@@ -165,20 +163,18 @@ int main(void) {
     // NOTE: Drawing
     BeginDrawing();
     ClearBackground(WHITE);
+    // DrawTexturePro(background, source, dest, (Vector2){0, 0}, 0, WHITE);
 
-    DrawTexturePro(background, source, dest, (Vector2){0, 0}, 0, WHITE);
-
-    // DrawRectangle(p.shape.x, p.shape.y, p.shape.width, p.shape.height, RED);
     DrawTexturePro(p.tex, p.source, p.shape, (Vector2){0, 0}, 0, WHITE);
 
     for (int i = 0; i < DROPLETS_MAX; i++) {
       if (droplets[i].active) {
         if (droplets[i].type == Normal) {
-          DrawCircleV(droplets[i].pos, droplets[i].radius, BLUE);
+          DrawTexturePro(droplets[i].tex, droplets[i].source, droplets[i].pos,
+                         (Vector2){0, 0}, 0, WHITE);
         } else if (droplets[i].type == Toxic) {
-          DrawCircleV(droplets[i].pos, droplets[i].radius, GREEN);
-        } else {
-          DrawCircleV(droplets[i].pos, droplets[i].radius, GOLD);
+          DrawTexturePro(droplets[i].tex, droplets[i].source, droplets[i].pos,
+                         (Vector2){0, 0}, 0, GREEN);
         }
       }
     }
@@ -190,6 +186,7 @@ int main(void) {
     EndDrawing();
   }
 
+  UnloadTexture(p.tex);
   CloseWindow();
   return 0;
 }
