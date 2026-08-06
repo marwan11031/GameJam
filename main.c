@@ -29,6 +29,9 @@ typedef struct {
   Rectangle shape;
   float speed;
   unsigned score;
+
+  Texture2D tex;
+  Rectangle source;
 } Player;
 
 void spawnDroplet(Droplet droplets[], int maxDroplets) {
@@ -65,9 +68,27 @@ int main(void) {
       .shape = (Rectangle){400, HEIGHT - 30, 80, 30},
       .speed = 600,
       .score = 0,
+      .tex = LoadTexture("assets/Bucket.png"),
   };
 
+  p.source = (Rectangle){0, 0, (float)p.tex.width, (float)p.tex.height};
+
   Droplet droplets[DROPLETS_MAX] = {0};
+
+  Texture2D background = LoadTexture("assets/monokuma-danganronpa.jpg");
+  Rectangle source = (Rectangle){
+      .x = 0,
+      .y = 0,
+      .width = background.width,
+      .height = background.height,
+  };
+
+  Rectangle dest = (Rectangle){
+      .x = 0,
+      .y = 0,
+      .width = WIDTH,
+      .height = HEIGHT,
+  };
 
   float timer = 0;
   float spawnTimer = 0;
@@ -77,7 +98,7 @@ int main(void) {
     float dt = GetFrameTime();
 
     timer += dt;
-    if (timer >= 15 && spawnInterval > 0.5) {
+    if (timer >= 10 && spawnInterval > 0.5) {
       spawnInterval -= 0.1;
       timer = 0;
     }
@@ -110,7 +131,29 @@ int main(void) {
         if (CheckCollisionCircleRec(droplets[i].pos, droplets[i].radius,
                                     p.shape)) {
           droplets[i].active = false;
-          p.score++;
+
+          switch (droplets[i].type) {
+          case Toxic: {
+            if (p.score < 5) {
+              p.score = 0;
+            } else {
+              p.score -= 5;
+            }
+
+          } break;
+
+          case Golden: {
+            p.score += 5;
+
+          } break;
+
+          case Normal: {
+            p.score++;
+          } break;
+
+          default:
+            break;
+          }
         }
 
         if (droplets[i].pos.y > HEIGHT) {
@@ -122,17 +165,20 @@ int main(void) {
     // NOTE: Drawing
     BeginDrawing();
     ClearBackground(WHITE);
-    DrawRectangle(p.shape.x, p.shape.y, p.shape.width, p.shape.height,
-                  DARKGREEN);
+
+    DrawTexturePro(background, source, dest, (Vector2){0, 0}, 0, WHITE);
+
+    // DrawRectangle(p.shape.x, p.shape.y, p.shape.width, p.shape.height, RED);
+    DrawTexturePro(p.tex, p.source, p.shape, (Vector2){0, 0}, 0, WHITE);
 
     for (int i = 0; i < DROPLETS_MAX; i++) {
       if (droplets[i].active) {
         if (droplets[i].type == Normal) {
-          DrawCircleV(droplets[i].pos, 10, BLUE);
+          DrawCircleV(droplets[i].pos, droplets[i].radius, BLUE);
         } else if (droplets[i].type == Toxic) {
-          DrawCircleV(droplets[i].pos, 10, GREEN);
+          DrawCircleV(droplets[i].pos, droplets[i].radius, GREEN);
         } else {
-          DrawCircleV(droplets[i].pos, 10, GOLD);
+          DrawCircleV(droplets[i].pos, droplets[i].radius, GOLD);
         }
       }
     }
