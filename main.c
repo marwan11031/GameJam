@@ -34,13 +34,23 @@ typedef struct {
   Rectangle source;
 } Player;
 
-void spawnDroplet(Droplet droplets[], int maxDroplets, Texture2D dropTex) {
+Player *InitPlayer() {
+  Player *p = malloc(sizeof(*p));
+  p->shape = (Rectangle){400, HEIGHT - 30, 80, 30};
+  p->speed = 600;
+  p->score = 0;
+  p->tex = LoadTexture("assets/Bucket.png");
+  p->source = (Rectangle){0, 0, p->tex.width, p->tex.height};
+
+  return p;
+}
+
+void SpawnDroplet(Droplet droplets[], int maxDroplets, Texture2D dropTex) {
   int padding = 20;
   int typeSeed = GetRandomValue(0, 100);
 
   for (int i = 0; i < maxDroplets; i++) {
     if (!droplets[i].active) {
-
       if (typeSeed >= 0 && typeSeed <= 15) {
         droplets[i].type = Toxic;
       } else {
@@ -49,13 +59,13 @@ void spawnDroplet(Droplet droplets[], int maxDroplets, Texture2D dropTex) {
 
       droplets[i].pos.width = 15;
       droplets[i].pos.height = 15;
-
       droplets[i].pos.x = GetRandomValue(0 + padding, WIDTH - padding);
-      droplets[i].speed = GetRandomValue(170, 250);
       droplets[i].pos.y = 0;
-      droplets[i].active = true;
 
+      droplets[i].speed = GetRandomValue(170, 250);
+      droplets[i].active = true;
       droplets[i].tex = dropTex;
+
       droplets[i].source = (Rectangle){.x = 0,
                                        .y = 0,
                                        .width = (float)droplets[i].tex.width,
@@ -65,66 +75,43 @@ void spawnDroplet(Droplet droplets[], int maxDroplets, Texture2D dropTex) {
   }
 }
 
-void update(Player *p, Droplet *droplets, Texture2D dropTex) {
-
-  float dt = GetFrameTime();
-
+void UpdateSpawner(Droplet droplets[], Texture2D dropTex, float dt) {
   static float timer = 0;
   static float spawnTimer = 0;
   static float spawnInterval = 1.5f;
 
   timer += dt;
   if (timer >= 10 && spawnInterval > 0.5f) {
-    spawnInterval -= 0.1f;
+    spawnInterval -= 0.2f;
     timer = 0;
   }
 
   spawnTimer += dt;
   if (spawnTimer >= spawnInterval) {
-    spawnDroplet(droplets, DROPLETS_MAX, dropTex);
+    SpawnDroplet(droplets, DROPLETS_MAX, dropTex);
     spawnTimer = 0;
   }
+}
 
+void UpdatePlayer(Player *p, float dt) {
   if (IsKeyDown(KEY_A)) {
     p->shape.x -= p->speed * dt;
   }
-
   if (IsKeyDown(KEY_D)) {
     p->shape.x += p->speed * dt;
   }
-
   if (p->shape.x < 0) {
     p->shape.x = 0;
   }
-
   if (p->shape.x > WIDTH - p->shape.width) {
     p->shape.x = WIDTH - p->shape.width;
   }
+}
 
+void UpdateDroplets(Droplet droplets[], float dt) {
   for (int i = 0; i < DROPLETS_MAX; i++) {
     if (droplets[i].active) {
       droplets[i].pos.y += droplets[i].speed * dt;
-
-      if (CheckCollisionRecs(droplets[i].pos, p->shape)) {
-        droplets[i].active = false;
-
-        switch (droplets[i].type) {
-        case Toxic: {
-          if (p->score < 5) {
-            p->score = 0;
-          } else {
-            p->score -= 5;
-          }
-
-        } break;
-        case Normal: {
-          p->score++;
-        } break;
-
-        default:
-          break;
-        }
-      }
 
       if (droplets[i].pos.y > HEIGHT) {
         droplets[i].active = false;
@@ -133,8 +120,45 @@ void update(Player *p, Droplet *droplets, Texture2D dropTex) {
   }
 }
 
-void drawGame(Player *p, Droplet *droplets) {
+void ResolveCollisions(Player *p, Droplet droplets[]) {
+  for (int i = 0; i < DROPLETS_MAX; i++) {
+    if (droplets[i].active) {
+      if (CheckCollisionRecs(droplets[i].pos, p->shape)) {
+        droplets[i].active = false;
 
+        switch (droplets[i].type) {
+        case Toxic:
+          if (p->score < 5) {
+            p->score = 0;
+          } else {
+            p->score -= 5;
+          }
+          break;
+        case Normal:
+          p->score++;
+          break;
+        }
+      }
+    }
+  }
+}
+
+void UpdateGame(Player *p, Droplet droplets[], Texture2D dropTex, float dt,
+                bool moveLeft, bool moveRight) {
+  UpdateSpawner(droplets, dropTex, dt);
+  UpdatePlayer(p, dt);
+  UpdateDroplets(droplets, dt);
+  ResolveCollisions(p, droplets);
+}
+
+void DrawTitle(Texture2D background) {
+  DrawTexturePro(background,
+                 (Rectangle){0, 0, background.width, background.height},
+                 (Rectangle){0, 0, WIDTH, HEIGHT}, (Vector2){0, 0}, 0, WHITE);
+  DrawText("Press Enter to play...", 300, 200, 20, WHITE);
+}
+
+void DrawGame(Player *p, Droplet droplets[]) {
   ClearBackground(WHITE);
   DrawTexturePro(p->tex, p->source, p->shape, (Vector2){0, 0}, 0, WHITE);
 
@@ -155,19 +179,8 @@ void drawGame(Player *p, Droplet *droplets) {
   DrawText(buffer, 10, 10, 20, GRAY);
 }
 
-Player *InitPlayer() {
-  Player *p = malloc(sizeof(*p));
-  p->shape = (Rectangle){400, HEIGHT - 30, 80, 30};
-  p->speed = 600, p->score = 0;
-  p->tex = LoadTexture("assets/Bucket.png");
-  p->source = (Rectangle){0, 0, p->tex.width, p->tex.height};
-
-  return p;
-}
-
 int main(void) {
-
-  InitWindow(WIDTH, HEIGHT, "Raylib");
+  InitWindow(WIDTH, HEIGHT, "Bucket & Droplets");
   SetTargetFPS(60);
 
   Player *p = InitPlayer();
@@ -179,43 +192,35 @@ int main(void) {
 
   while (!WindowShouldClose()) {
 
+    float dt = GetFrameTime();
+    bool moveLeft = IsKeyDown(KEY_A);
+    bool moveRight = IsKeyDown(KEY_D);
+
     switch (state) {
     case Title: {
-      if (IsKeyPressed(KEY_ENTER))
+      if (IsKeyDown(KEY_ENTER))
         state = Play;
     } break;
-
     case Play: {
-      update(p, droplets, dropTex);
+      UpdateGame(p, droplets, dropTex, dt, moveLeft, moveRight);
     } break;
 
     default:
       break;
     }
 
-    /*
-           NOTE: Drawing HERE
-    */
     BeginDrawing();
-
     switch (state) {
-
     case Title: {
-      DrawTexturePro(
-          background, (Rectangle){0, 0, background.width, background.height},
-          (Rectangle){0, 0, WIDTH, HEIGHT}, (Vector2){0, 0}, 0, WHITE);
-
-      DrawText("Press Enter to play...", 300, 200, 20, BLACK);
+      DrawTitle(background);
     } break;
-
     case Play: {
-      drawGame(p, droplets);
+      DrawGame(p, droplets);
     } break;
 
     default:
       break;
     }
-
     EndDrawing();
   }
 
