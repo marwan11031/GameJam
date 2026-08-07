@@ -4,7 +4,7 @@
 
 #define WIDTH 800
 #define HEIGHT 400
-#define DROPLETS_MAX 30
+#define DROPLETS_MAX 25
 
 typedef enum {
   Normal,
