@@ -143,8 +143,7 @@ void ResolveCollisions(Player *p, Droplet droplets[]) {
   }
 }
 
-void UpdateGame(Player *p, Droplet droplets[], Texture2D dropTex, float dt,
-                bool moveLeft, bool moveRight) {
+void UpdateGame(Player *p, Droplet droplets[], Texture2D dropTex, float dt) {
   UpdateSpawner(droplets, dropTex, dt);
   UpdatePlayer(p, dt);
   UpdateDroplets(droplets, dt);
@@ -193,8 +192,6 @@ int main(void) {
   while (!WindowShouldClose()) {
 
     float dt = GetFrameTime();
-    bool moveLeft = IsKeyDown(KEY_A);
-    bool moveRight = IsKeyDown(KEY_D);
 
     switch (state) {
     case Title: {
@@ -202,7 +199,7 @@ int main(void) {
         state = Play;
     } break;
     case Play: {
-      UpdateGame(p, droplets, dropTex, dt, moveLeft, moveRight);
+      UpdateGame(p, droplets, dropTex, dt);
     } break;
 
     default:
