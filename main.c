@@ -143,8 +143,7 @@ void ResolveCollisions(Player *p, Droplet droplets[]) {
   }
 }
 
-void UpdateGame(Player *p, Droplet droplets[], Texture2D dropTex, float dt,
-                bool moveLeft, bool moveRight) {
+void UpdateGame(Player *p, Droplet droplets[], Texture2D dropTex, float dt) {
   UpdateSpawner(droplets, dropTex, dt);
   UpdatePlayer(p, dt);
   UpdateDroplets(droplets, dt);
@@ -185,7 +184,7 @@ int main(void) {
 
   Player *p = InitPlayer();
   Texture2D dropTex = LoadTexture("assets/Droplit.png");
-  Texture2D background = LoadTexture("assets/background.jpg");
+  // Texture2D background = LoadTexture("assets/background.jpg");
   Droplet *droplets = calloc(DROPLETS_MAX, sizeof(*droplets));
 
   GameState state = Title;
@@ -193,16 +192,13 @@ int main(void) {
   while (!WindowShouldClose()) {
 
     float dt = GetFrameTime();
-    bool moveLeft = IsKeyDown(KEY_A);
-    bool moveRight = IsKeyDown(KEY_D);
-
     switch (state) {
     case Title: {
       if (IsKeyDown(KEY_ENTER))
         state = Play;
     } break;
     case Play: {
-      UpdateGame(p, droplets, dropTex, dt, moveLeft, moveRight);
+      UpdateGame(p, droplets, dropTex, dt);
     } break;
 
     default:
@@ -212,7 +208,7 @@ int main(void) {
     BeginDrawing();
     switch (state) {
     case Title: {
-      DrawTitle(background);
+      // DrawTitle(background);
     } break;
     case Play: {
       DrawGame(p, droplets);
@@ -226,7 +222,7 @@ int main(void) {
 
   UnloadTexture(p->tex);
   UnloadTexture(dropTex);
-  UnloadTexture(background);
+  // UnloadTexture(background);
   free(droplets);
   free(p);
 
