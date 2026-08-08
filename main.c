@@ -184,7 +184,7 @@ int main(void) {
 
   Player *p = InitPlayer();
   Texture2D dropTex = LoadTexture("assets/Droplit.png");
-  // Texture2D background = LoadTexture("assets/background.jpg");
+  Texture2D background = LoadTexture("assets/background.jpg");
   Droplet *droplets = calloc(DROPLETS_MAX, sizeof(*droplets));
 
   GameState state = Title;
@@ -209,7 +209,7 @@ int main(void) {
     BeginDrawing();
     switch (state) {
     case Title: {
-      // DrawTitle(background);
+      DrawTitle(background);
     } break;
     case Play: {
       DrawGame(p, droplets);
@@ -223,7 +223,7 @@ int main(void) {
 
   UnloadTexture(p->tex);
   UnloadTexture(dropTex);
-  // UnloadTexture(background);
+  UnloadTexture(background);
   free(droplets);
   free(p);
 
